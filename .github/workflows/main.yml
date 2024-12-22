@@ -39,7 +39,7 @@ jobs:
     - name: Install SSH Client and Docker Compose
       run: |
         sudo apt-get update
-        sudo apt-get install -y sshpass docker-compose
+        sudo apt-get install -y sshpass git docker-compose
 
     - name: Checkout Code (again for the deployment)
       uses: actions/checkout@v3
@@ -48,18 +48,26 @@ jobs:
       env:
         SSH_HOST: ${{ secrets.AZURE_SERVER_HOST }}
         SSH_USER: ${{ secrets.AZURE_SERVER_USER }}
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PRIVATE_KEY: ${{ secrets.AZURE_SERVER_SSH_KEY }}
       run: |
-        # Set up SSH key
+        # Set up SSH key for authentication
         mkdir -p ~/.ssh
         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
 
         # SSH into the server and deploy using Docker Compose
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST << 'EOF'
-        cd /path/to/your/app  # Replace with the actual directory on the server
-        git pull origin main   # Pull the latest changes from GitHub if needed
-        docker-compose pull    # Pull the latest Docker image
-        docker-compose down    # Stop and remove existing containers
-        docker-compose up -d   # Start updated containers in detached mode
+        # Create the 'app' directory in the home directory if it doesn't exist
+        mkdir -p ~/app
+
+        # Navigate to the 'app' directory
+        cd ~/app
+
+        # Clone the repository (or pull if it already exists)
+        git clone https://github.com/your_username/your_repository.git . || git pull origin main
+
+        # Pull the latest Docker images and update the containers
+        docker-compose pull
+        docker-compose down
+        docker-compose up -d
         EOF
