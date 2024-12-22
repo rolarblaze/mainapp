@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankapp
+    ports:
+      - "3000:3000"
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:80"
+      - "443:443"
+    restart: always
+    depends_on:
+      - nextjs
