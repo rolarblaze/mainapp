@@ -37,21 +37,23 @@ jobs:
     needs: build-and-push
 
     steps:
-    - name: Install SSH Client
-      run: sudo apt-get update && sudo apt-get install -y sshpass
-
-    - name: Deploy with Docker Compose
-      env:
-        SSH_HOST: ${{ secrets.PRODUCTION_SERVER_HOST }}
-        SSH_USER: ${{ secrets.PRODUCTION_SERVER_USER }}
-        SSH_PASS: ${{ secrets.PRODUCTION_SERVER_PASS }}
-      run: |
-        # SSH into the server and deploy using Docker Compose
-        sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
-        cd /path/to/docker-compose  # Navigate to the directory with docker-compose.yml
-        docker-compose pull         # Pull the latest image
-        docker-compose down         # Stop and remove current containers
-        docker-compose up -d        # Start updated containers in detached mode
-        EOF
-     
-        
+      - name: Install SSH Client
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+  
+      - name: Deploy using Docker Compose
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST << 'EOF'
+          cd /path/to/docker-compose
+          docker-compose pull
+          docker-compose down
+          docker-compose up -d
+          EOF
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+           
+            
